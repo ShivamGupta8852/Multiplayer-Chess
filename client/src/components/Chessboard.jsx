@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { initialGameState, rows, columns } from "../utils/constants";
 import socket from "../utils/socket";
@@ -14,6 +14,10 @@ const Chessboard = () => {
   const [playerTurn, setPlayerTurn] = useState("white");
   const [playingAs, setPlayingAs] = useState("");
   const [isKingInCheck, setIsKingInCheck] = useState(null);
+  const [timers, setTimers] = useState({white: 600000, black: 600000 });
+  const timerRef = useRef({ white: 600000, black: 600000 });
+  // const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
+  // const [moveList, setMoveList] = useState([]);
   let checkTimeout;
 
   const joinGame = () => {
@@ -24,24 +28,25 @@ const Chessboard = () => {
     socket.emit("joinGame", { roomID, userID });
 
     socket.on("UpdateGame", (game) => {
-      const { board, turn } = game.state;
+      const { board, turn,timers } = game.state;
       const { players } = game;
       const player = players.find((player) => player.userID === userID);
       const role = player ? player.role : null;
-      console.log("role of socket in client " + role);
-      console.log("created at :  " + Date.now());
+      setTimers(timers);
+      timerRef.current = timers;
       setChessboard(board);
       setPlayerTurn(turn);
       setPlayingAs(role);
     });
 
     socket.on("possibleMoves", (possibleMoves) => {
-      console.log(possibleMoves);
       setPossibleMoves(possibleMoves);
     });
 
     socket.on("moved", (game) => {
-      const { board, turn } = game.state;
+      const { board, turn, timers } = game.state;
+      setTimers(timers);
+      timerRef.current = timers;
       setChessboard(board);
       setPlayerTurn(turn);
       setPossibleMoves([]);
@@ -61,9 +66,43 @@ const Chessboard = () => {
       }, 3000);
     });
 
-    socket.on('connect', () => {
-      joinGame();
+    socket.on('undoMove' , (previewBoard) => {
+      setChessboard(previewBoard);
+      setSelectedPiece(null);
+      setPossibleMoves([]);
     })
+
+    socket.on('redoMove' , (previewBoard) => {
+      setChessboard(previewBoard);
+      setSelectedPiece(null);
+      setPossibleMoves([]);
+    })
+
+    socket.on('originalBoard' , (board) => {
+      setChessboard(board);
+      setSelectedPiece(null);
+      setPossibleMoves([]);
+    })
+
+    socket.on('beginningMove', (initialboard) => {
+      setChessboard(initialboard);
+      setSelectedPiece(null);
+      setPossibleMoves([]);
+    })
+
+    socket.on('endingMove', (board) => {
+      setChessboard(board);
+      setSelectedPiece(null);
+      setPossibleMoves([]);
+    })
+
+
+    socket.on("connect", () => {
+      joinGame();
+    });
+    socket.on("reconnect", () => {
+      joinGame();
+    });
 
     return () => {
       socket.off("UpdateGame");
@@ -73,56 +112,21 @@ const Chessboard = () => {
     };
   }, []);
 
-  // useEffect(()=>{
-  //   socket.emit("joinGame", {roomID,userID});
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (playerTurn) {
+        const newTimers = {
+          ...timerRef.current,
+          [playerTurn]: timerRef.current[playerTurn] - 1000,
+        };
+        // if(timerRef.current[playerTurn] <= 0) socket.emit("timerExpired", roomID);
+        setTimers(newTimers);
+        timerRef.current = newTimers;
+      }
+    }, 1000);
 
-  //   socket.on("UpdateGame", (game) => {
-  //     const {board,turn} = game.state;
-  //     const {players} = game;
-  //     // get the role of player with userID
-  //     const player = players.find(player => player.userID === userID);
-  //     const role = player ? player.role : null;
-  //     console.log("role of socket in client "+role);
-  //     console.log("created at :  "+Date.now());
-  //     setChessboard(board);
-  //     setPlayerTurn(turn);
-  //     setPlayingAs(role);
-  //   })
-
-  //   socket.on("possibleMoves", (possibleMoves) => {
-  //     console.log(possibleMoves);
-  //     setPossibleMoves(possibleMoves);
-  //   })
-
-  //   socket.on("moved", (game) => {
-  //     const {board,turn} = game.state;
-  //     setChessboard(board);
-  //     setPlayerTurn(turn);
-  //     setPossibleMoves([]);
-  //     setSelectedPiece(null);
-  //   })
-
-  // socket.on("check", (game,kingPosition) => {
-  //   const {board,turn} = game.state;
-  //   setChessboard(board);
-  //   setPlayerTurn(turn);
-  //   setIsKingInCheck(kingPosition);
-  //   setPossibleMoves([]);
-  //   setSelectedPiece(null);
-
-  //   checkTimeout = setTimeout(() => {
-  //     setIsKingInCheck(null);
-  //   }, 3000);
-  // })
-
-  //   return () => {
-  //     socket.off('UpdateGame');
-  //     socket.off('possibleMoves');
-  //     socket.off("moved");
-  //     socket.off("check");
-  //   };
-
-  // },[])
+    return () => clearInterval(interval);
+  }, [playerTurn]);
 
   function handleSquareClick(piece, position) {
     if (piece && piece.startsWith(playerTurn) && playingAs == playerTurn) {
@@ -130,7 +134,8 @@ const Chessboard = () => {
       setIsKingInCheck(null);
       setSelectedPiece({ piece, position });
       socket.emit("getPossibleMoves", roomID, piece, position);
-    } else if (selectedPiece && possibleMoves.includes(position)) {
+    } 
+    else if (selectedPiece && possibleMoves.includes(position)) {
       socket.emit("validateMove", {
         roomID,
         piece: selectedPiece.piece,
@@ -143,7 +148,7 @@ const Chessboard = () => {
   return (
     <div className="max-w-full h-[calc(100vh-4rem)]  px-5 py-2 flex gap-4 flex-col md:flex-row bg-slate-900 text-white">
       <div className="w-full md:w-auto md:mx-16 flex flex-col lg:justify-center items-center gap-2">
-        <div>Black Timer</div>
+        <div className="text-xl">Black Timer : <span className="bg-slate-700 px-2 py-[1.5px] rounded">{Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span></div>
         <div className="flex flex-col">
           {chessboard.map((row, rowIndex) => {
             return (
@@ -171,10 +176,14 @@ const Chessboard = () => {
             );
           })}
         </div>
-        <div>White Timer</div>
+        <div className="text-xl">White Timer : <span className="bg-slate-700 px-2 py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span></div>
       </div>
-      <Controls
-        roomID = {roomID}
+      <Controls 
+        roomID={roomID}
+        chessboard = {chessboard}
+        playerTurn = {playerTurn}
+        playingAs = {playingAs}
+
       />
     </div>
   );

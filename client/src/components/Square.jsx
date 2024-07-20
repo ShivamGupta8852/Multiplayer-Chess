@@ -3,11 +3,7 @@ import { pieceImages } from '../utils/constants';
 
 
 const Square = ({position, piece, isSelected, possibleMoves, handleSquareClick, rowIndex, colIndex,isCurrentKingInCheck }) => {
-    // const handleClick = React.useCallback(() => {
-    //     handleSquareClick(piece, position);
-    //   }, [handleSquareClick, piece, position]);
-
-
+  
     return (
     <div
        id = {position} 

@@ -1,3 +1,4 @@
+import { initialGameState } from "../utilies/constants.js";
 import mongoose from "mongoose";
 
 const gameSchema = new mongoose.Schema({
@@ -21,17 +22,7 @@ const gameSchema = new mongoose.Schema({
     board : {
         type: [[String]],
         required : true,
-        default : () => {[
-          ["black-rook", "black-knight", "black-bishop", "black-queen", "black-king", "black-bishop", "black-knight", "black-rook"],
-          ["black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn"],
-          ["", "", "", "", "", "", "", ""],
-          ["", "", "", "", "", "", "", ""],
-          ["", "", "", "", "", "", "", ""],
-          ["", "", "", "", "", "", "", ""],
-          ["white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn"],
-          ["white-rook", "white-knight", "white-bishop", "white-queen", "white-king", "white-bishop", "white-knight", "white-rook"],
-         ]
-        }
+        default : () => {initialGameState}
     },
     turn : {
         type: String,
@@ -43,12 +34,12 @@ const gameSchema = new mongoose.Schema({
         white:{
             type: Number,
             required:true,
-            default:600000
+            // default:600000
         },
         black:{
             type: Number,
             required:true,
-            default:600000
+            // default:600000
         }
     },
     moveList : {
@@ -61,10 +52,14 @@ const gameSchema = new mongoose.Schema({
       required : true,
       default : -1
     },
+    previewBoard : {
+      type : [[String]],
+      required : true,
+      default : () => {initialGameState}
+    },
     lastMoveTime : {
-      type: Date,
+      type: Number,
       required: true,
-      default: Date.now
     }
   },
   isAvailableForRandom : {

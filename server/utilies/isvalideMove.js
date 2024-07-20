@@ -10,7 +10,7 @@ const isvalideMove = (game,piece,from,to) => {
     let turn  = game.state.turn;
 
     // // temporary change the board
-    let originalPiece = board[toRow][toCol]; 
+    const capturedPiece = board[toRow][toCol]; 
     board[toRow][toCol] = piece;
     board[fromRow][fromCol] = "";
 
@@ -18,16 +18,23 @@ const isvalideMove = (game,piece,from,to) => {
 
     if(isKingInCheck(board,turn)){
         //restore the original board if king is in check and return false to show invalid move
-        board[toRow][toCol] = originalPiece;
+        board[toRow][toCol] = capturedPiece;
         board[fromRow][fromCol] = piece;
 
         game.state.board[fromRow][fromCol] = piece;
-        game.state.board[toRow][toCol] = originalPiece;
+        game.state.board[toRow][toCol] = capturedPiece;
         return false;
     }
 
     game.state.board[toRow][toCol] = piece;
     game.state.board[fromRow][fromCol] = "";
+
+    game.state.previewBoard = game.state.board;
+     // update movelist
+    //  game.state.moveList = game.state.moveList.slice(0, game.state.currentMoveIndex + 1);
+     game.state.moveList.push({ from, to, capturedPiece});
+     game.state.currentMoveIndex = game.state.moveList.length - 1;
+     game.state.lastMoveTime = Date.now();
 
     return true;
 
