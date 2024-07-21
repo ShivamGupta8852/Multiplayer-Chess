@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import {FaMicrophone,FaMicrophoneSlash , FaStepBackward, FaUndo,FaRedo,FaStepForward} from "react-icons/fa";
 import socket from "../utils/socket";
 import { columns, rows } from "../utils/constants.jsx";
+import { modified_movelist } from "../utils/helperFunctions.jsx";
 
-const Controls = ({roomID,chessboard,playerTurn,playingAs}) => {
+const Controls = ({roomID,chessboard,playerTurn,playingAs,moveList}) => {
   const [isListening, setIsListening] = useState(false);
+  const newMoveList = modified_movelist(moveList,2);
 
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window)) {
@@ -38,16 +40,16 @@ const Controls = ({roomID,chessboard,playerTurn,playingAs}) => {
   }, [isListening]);
 
   const handleVoiceCommand = (command) => {
-    const moveMatch = command.match(/(?:make a move from|move|move from|make a move)? (\w\d) (?:to|to)? (\w\d)/i);
+    const moveMatch = command.match(/(?:make a move from |move |move from |make a move )?(\w\d) to (\w\d)/i);
     if (moveMatch) {
-      console.log("match", moveMatch);
       const from = moveMatch[1];
       const to = moveMatch[2];
       let fromRow = rows.indexOf(from[1]);
       let fromCol = columns.indexOf(from[0]);
       const piece = chessboard[fromRow][fromCol];
-      // Emit move to server or handle locally
-      if(playerTurn == playingAs){
+
+      // emit validateMove event to server
+      if(playerTurn == playingAs && piece.startsWith(playerTurn) && piece){
         socket.emit("validateMove", {
           roomID,
           piece,
@@ -56,7 +58,7 @@ const Controls = ({roomID,chessboard,playerTurn,playingAs}) => {
         });
         setIsListening(false);
       } else{
-        console.log("it is not your turn");
+        console.log("invalid move");
         setIsListening(false);
       }
     } else {
@@ -72,13 +74,26 @@ const Controls = ({roomID,chessboard,playerTurn,playingAs}) => {
   }
 
   return (
-    <div className="w-full mt-4 md:mt-3">
-      <div className="flex justify-between md:px-40">
+    <div className="mt-4 md:mt-3 flex flex-col">
+      <div className="flex justify-between md:px-40 lg:gap-x-3">
         <button onClick={() => playerTurn == playingAs && setIsListening(!isListening)} className="text-2xl bg-green-700 text-rose-100 px-6 py-2 rounded-sm">{isListening ? <FaMicrophone />: <FaMicrophoneSlash />}</button>
         <button onClick={() => socket.emit('beginning',{roomID})} className="text-2xl bg-green-700 text-rose-100 px-6 py-2 rounded-sm"><FaStepBackward /></button>
         <button onClick={() => socket.emit('undo',{roomID})} className="text-2xl bg-green-700 text-rose-100 px-6 py-2 rounded-sm"><FaUndo /></button>
         <button onClick={() => socket.emit('redo', {roomID})} className="text-2xl  bg-green-700 text-rose-100 px-6 py-2 rounded-sm"><FaRedo /></button>
         <button onClick={() => socket.emit('ending',{roomID})} className="text-2xl  bg-green-700 text-rose-100 px-6 py-2 rounded-sm"><FaStepForward /></button>
+      </div>
+      <div className=" mt-4 md:mt-4 flex flex-col mx-5 mb-6 px-2 h-[calc(100vh-4rem)] bg-gray-800">
+        {newMoveList.map((pair,pairIndex) => {
+          return (<div key={pairIndex} className="flex">
+            <div className="w-[30%]">{pairIndex+1}.</div>
+            {pair.map((move,moveIndex) => {
+              return (<div key={moveIndex} className="w-[30%]">
+                {move.to}
+              </div>)
+            })}
+          </div>)
+        })}
+
       </div>
     </div>
   );

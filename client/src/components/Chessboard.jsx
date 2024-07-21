@@ -4,6 +4,7 @@ import { initialGameState, rows, columns } from "../utils/constants";
 import socket from "../utils/socket";
 import Square from "./Square.jsx";
 import Controls from "./Controls.jsx";
+import { getBoardForRole } from "../utils/helperFunctions.jsx";
 
 const Chessboard = () => {
   const { roomID } = useParams();
@@ -17,7 +18,7 @@ const Chessboard = () => {
   const [timers, setTimers] = useState({white: 600000, black: 600000 });
   const timerRef = useRef({ white: 600000, black: 600000 });
   // const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
-  // const [moveList, setMoveList] = useState([]);
+  const [moveList, setMoveList] = useState([]);
   let checkTimeout;
 
   const joinGame = () => {
@@ -28,13 +29,14 @@ const Chessboard = () => {
     socket.emit("joinGame", { roomID, userID });
 
     socket.on("UpdateGame", (game) => {
-      const { board, turn,timers } = game.state;
+      const { board, turn,timers,moveList } = game.state;
       const { players } = game;
       const player = players.find((player) => player.userID === userID);
       const role = player ? player.role : null;
       setTimers(timers);
       timerRef.current = timers;
       setChessboard(board);
+      setMoveList(moveList);
       setPlayerTurn(turn);
       setPlayingAs(role);
     });
@@ -44,9 +46,10 @@ const Chessboard = () => {
     });
 
     socket.on("moved", (game) => {
-      const { board, turn, timers } = game.state;
+      const { board, turn, timers,moveList } = game.state;
       setTimers(timers);
       timerRef.current = timers;
+      setMoveList(moveList);
       setChessboard(board);
       setPlayerTurn(turn);
       setPossibleMoves([]);
@@ -145,18 +148,21 @@ const Chessboard = () => {
     }
   }
 
+  const displayedBoard = getBoardForRole(chessboard, playingAs);
+
   return (
-    <div className="max-w-full h-[calc(100vh-4rem)]  px-5 py-2 flex gap-4 flex-col md:flex-row bg-slate-900 text-white">
+    <div className="max-w-full lg:h-[calc(100vh-4rem)]  px-5 py-2 flex gap-4 flex-col lg:flex-row bg-slate-900 text-white">
       <div className="w-full md:w-auto md:mx-16 flex flex-col lg:justify-center items-center gap-2">
-        <div className="text-xl">Black Timer : <span className="bg-slate-700 px-2 py-[1.5px] rounded">{Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span></div>
+        <div className="text-xl lg:text-lg">Black Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded">{Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span></div>
         <div className="flex flex-col">
-          {chessboard.map((row, rowIndex) => {
+          {displayedBoard.map((row, rowIndex) => {
             return (
               <div key={rows[rowIndex]} className="flex">
                 {row.map((piece, colIndex) => {
-                  const position = `${columns[colIndex]}${rows[rowIndex]}`;
-                  const isSelected =
-                    selectedPiece && selectedPiece.position === position;
+                  const adjustedColIndex = playingAs === "black" ? 7 - colIndex : colIndex;
+                  const adjustedRowIndex = playingAs === "black" ? 7 - rowIndex : rowIndex;
+                  const position = `${columns[adjustedColIndex]}${rows[adjustedRowIndex]}`;
+                  const isSelected = selectedPiece && selectedPiece.position === position;
                   const isCurrentKingInCheck = isKingInCheck === position;
                   return (
                     <Square
@@ -169,6 +175,7 @@ const Chessboard = () => {
                       rowIndex={rowIndex}
                       colIndex={colIndex}
                       isCurrentKingInCheck={isCurrentKingInCheck}
+                      playingAs = {playingAs}
                     />
                   );
                 })}
@@ -176,14 +183,14 @@ const Chessboard = () => {
             );
           })}
         </div>
-        <div className="text-xl">White Timer : <span className="bg-slate-700 px-2 py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span></div>
+        <div className="text-xl lg:text-lg">White Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span></div>
       </div>
       <Controls 
         roomID={roomID}
         chessboard = {chessboard}
         playerTurn = {playerTurn}
         playingAs = {playingAs}
-
+        moveList = {moveList}
       />
     </div>
   );
