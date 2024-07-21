@@ -47,6 +47,7 @@ export default async function handleSocketEvents(io){
         // join the room and both players start the game
         const joinRoomAndPlay = async (roomID,socket,game) => {
             game.players.push({ userID: socket.userID, role: 'black' });
+            game.state.lastMoveTime = Date.now() + 3;
             games.set(roomID, game);
             await Game.updateOne({ roomID }, {players : game.players});
             socket.join(roomID);

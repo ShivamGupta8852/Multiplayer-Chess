@@ -34,12 +34,12 @@ const gameSchema = new mongoose.Schema({
         white:{
             type: Number,
             required:true,
-            // default:600000
+            default:600000
         },
         black:{
             type: Number,
             required:true,
-            // default:600000
+            default:600000
         }
     },
     moveList : {
@@ -60,6 +60,7 @@ const gameSchema = new mongoose.Schema({
     lastMoveTime : {
       type: Number,
       required: true,
+      default : Date.now()
     }
   },
   isAvailableForRandom : {
