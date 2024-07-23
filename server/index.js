@@ -4,7 +4,7 @@ import cors from 'cors';
 import {createServer} from 'http';
 import { Server } from 'socket.io';
 import handleSocketEvents from './socketHandler.js';
-import connectDB from './database/connectdb.js';
+import connectDB from './database/connectDB.js';
 
 const app = express();
 app.use(cors({
