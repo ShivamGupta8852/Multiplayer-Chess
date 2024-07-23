@@ -8,7 +8,7 @@ import connectDB from './database/connectDB.js';
 
 const app = express();
 app.use(cors({
-    origin : "http://localhost:5173"
+    origin : "https://chessmasteronline.netlify.app"
 }))
 const server = createServer(app);
 const io = new Server(server, {
