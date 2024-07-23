@@ -19,13 +19,13 @@ const io = new Server(server, {
 
 // handle Database(MongoDB) connection
 const DATABASE_URL = process.env.DATABASE_URL;
-connectDB(DATABASE_URL);
 
 // handle socket
 handleSocketEvents(io);
 
-
-const PORT = process.env.PORT || 8002;
-server.listen(PORT, () => {
-    console.log(`server is listening on port : ${PORT}`);
-})
+connectDB(DATABASE_URL).then(() => {
+    const PORT = process.env.PORT || 8002;
+    server.listen(PORT, () => {
+        console.log(`server is listening on port : ${PORT}`);
+    })
+});

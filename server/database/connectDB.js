@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Error } from "mongoose";
 
 const options = {
     serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
@@ -11,6 +12,7 @@ const connectDB = async (DATABASE_URL) => {
         console.log("MongoDB connected successfully !!");
     } catch (error) {
         console.log(error);
+        throw new Error("could not coonect to database")
     }
 }
 
