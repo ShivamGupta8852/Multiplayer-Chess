@@ -11,6 +11,7 @@ const Chessboard = () => {
   const userID = localStorage.getItem("userID");
   const [chessboard, setChessboard] = useState(initialGameState);
   const [selectedPiece, setSelectedPiece] = useState(null);
+  const [opponentSelectedPieces, setOpponentSelectedPieces] = useState([]);
   const [possibleMoves, setPossibleMoves] = useState([]);
   const [playerTurn, setPlayerTurn] = useState("white");
   const [playingAs, setPlayingAs] = useState("");
@@ -39,6 +40,7 @@ const Chessboard = () => {
       setMoveList(moveList);
       setPlayerTurn(turn);
       setPlayingAs(role);
+      setOpponentSelectedPieces([]);
     });
 
     socket.on("possibleMoves", (possibleMoves) => {
@@ -69,34 +71,15 @@ const Chessboard = () => {
       }, 3000);
     });
 
-    socket.on('undoMove' , (previewBoard) => {
-      setChessboard(previewBoard);
-      setSelectedPiece(null);
-      setPossibleMoves([]);
+    socket.on("opponentSelectedPiece", (position) => {
+      setOpponentSelectedPieces((prevOpponentSelectedPieces) => [...prevOpponentSelectedPieces, position]);
     })
 
-    socket.on('redoMove' , (previewBoard) => {
-      setChessboard(previewBoard);
+    socket.on('updateBoard' , (newBoard) => {
+      setChessboard(newBoard);
       setSelectedPiece(null);
       setPossibleMoves([]);
-    })
-
-    socket.on('originalBoard' , (board) => {
-      setChessboard(board);
-      setSelectedPiece(null);
-      setPossibleMoves([]);
-    })
-
-    socket.on('beginningMove', (initialboard) => {
-      setChessboard(initialboard);
-      setSelectedPiece(null);
-      setPossibleMoves([]);
-    })
-
-    socket.on('endingMove', (board) => {
-      setChessboard(board);
-      setSelectedPiece(null);
-      setPossibleMoves([]);
+      setOpponentSelectedPieces([]);
     })
 
 
@@ -112,6 +95,8 @@ const Chessboard = () => {
       socket.off("possibleMoves");
       socket.off("moved");
       socket.off("check");
+      socket.off("updateBoard");
+      socket.off("opponentSelectedPiece");
     };
   }, []);
 
@@ -122,7 +107,6 @@ const Chessboard = () => {
           ...timerRef.current,
           [playerTurn]: timerRef.current[playerTurn] - 1000,
         };
-        // if(timerRef.current[playerTurn] <= 0) socket.emit("timerExpired", roomID);
         setTimers(newTimers);
         timerRef.current = newTimers;
       }
@@ -145,6 +129,11 @@ const Chessboard = () => {
         from: selectedPiece.position,
         to: position,
       });
+      setOpponentSelectedPieces([]);
+    }
+    else{
+      setPossibleMoves([]);
+      setSelectedPiece(null);
     }
   }
 
@@ -153,7 +142,13 @@ const Chessboard = () => {
   return (
     <div className="max-w-full lg:h-[calc(100vh-4rem)]  px-5 py-2 flex gap-4 flex-col lg:flex-row bg-slate-900 text-white">
       <div className="w-full md:w-auto md:mx-16 flex flex-col lg:justify-center items-center gap-2">
-        <div className="text-xl lg:text-lg">Black Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded">{Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span></div>
+        {playingAs === "black" ? <div className="text-xl lg:text-lg">
+          White Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span>
+        </div> : 
+        <div className="text-xl lg:text-lg">
+          Black Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span>
+        </div>
+         }
         <div className="flex flex-col">
           {displayedBoard.map((row, rowIndex) => {
             return (
@@ -168,6 +163,7 @@ const Chessboard = () => {
                     <Square
                       key={columns[colIndex]}
                       position={position}
+                      opponentSelectedPieces = {opponentSelectedPieces}
                       piece={piece}
                       isSelected={isSelected}
                       possibleMoves={possibleMoves}
@@ -183,7 +179,13 @@ const Chessboard = () => {
             );
           })}
         </div>
-        <div className="text-xl lg:text-lg">White Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span></div>
+        {playingAs === "black" ? <div className="text-xl lg:text-lg">
+          Black Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.black / 60000)} : {Math.floor((timers.black % 60000) / 1000).toString().padStart(2, '0')}</span>
+        </div> : 
+        <div className="text-xl lg:text-lg">
+          White Timer : <span className="bg-slate-700 px-[6px] py-[1.5px] rounded"> {Math.floor(timers.white / 60000)} : {Math.floor((timers.white % 60000) / 1000).toString().padStart(2, '0')}</span>
+        </div>
+         }
       </div>
       <Controls 
         roomID={roomID}

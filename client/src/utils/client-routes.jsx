@@ -3,6 +3,7 @@
 import {createBrowserRouter} from 'react-router-dom';
 import Chessboard from "../components/Chessboard.jsx";
 import Home from "../components/Home.jsx";
+import About from '../components/About.jsx';
 import App from '../App.jsx';
 
 const route = createBrowserRouter([
@@ -13,6 +14,10 @@ const route = createBrowserRouter([
             {
                 path:"/",
                 element:<Home/>,
+            },
+            {
+                path:"/about",
+                element:<About/>,
             },
             {
                 path:"/game/:roomID",

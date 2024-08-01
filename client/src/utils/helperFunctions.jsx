@@ -8,7 +8,7 @@ export const modified_movelist = (moveList, chunksize) => {
 
 export const getBoardForRole = (board,role) => {
     if (role === "black") {
-        return board.slice().reverse().map(row => row.slice().reverse());;
+        return board.slice().reverse().map(row => row.slice().reverse());
     }
     return board;
 }
